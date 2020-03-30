@@ -1,0 +1,11 @@
+#获取每个分区链接 标题
+
+//ul[contains(@class,"nav nav-inline padding-small-top nav-menu")]//@href 
+//ul[contains(@class,"nav nav-inline padding-small-top nav-menu")]//@title
+
+#获取每个视频的链接
+//div[contains(@class,"line-middle grid media-inline")]//a[contains(@target,"_blank")]/@href
+
+#获取每个视频的标题a
+//div[contains(@class,"line-middle grid media-inline")]//a[contains(@target,"_blank")]/@title
+
