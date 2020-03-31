@@ -1,6 +1,6 @@
 # AVSpider
 AV catch tools
-# 批量爬取小视频
+# 批量爬取AV小视频
 ## 1 获取视频信息
 GET https://app5277.com  
 xpath获取分类 //ul[contains(@class,"nav nav-inline padding-small-top nav-menu")]//li/a  
@@ -13,6 +13,7 @@ xpath获取分类下的视频//div[contains(@class,"line-middle grid media-inlin
 ## 2 获取js链接  
 构造 GET https://app5277.com/play/6421-1-1.html  
 xpath 获取js链接 (目的获取m3u8视频链接） 
+返回 upload/playdata/20200328/7344/7344.js
 
 
 ## 3 提取m3u8视频主链接  
