@@ -1,5 +1,7 @@
 # AVSpider
-AV catch tools
+AV catch tools  
+使用Python requests lxml xpath  
+实现的多线程爬取全H网视频demo
 # 批量爬取AV小视频
 ## 1 获取视频信息
 GET https://app5277.com  
