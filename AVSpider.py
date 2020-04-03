@@ -7,10 +7,12 @@ import readconfig
 from urllib.parse import unquote
 from threading import *
 from m3u8Downloader import m3u8Assembly
+from logger import Logger
 
 
-nMaxThread = 5
+nMaxThread = 10
 connectlock = BoundedSemaphore(nMaxThread)
+
 
 class Spider:
     def __init__(self):
@@ -20,15 +22,35 @@ class Spider:
         self.menu_link = config.getValue("menu_link")
         self.av_link = config.getValue("av_link")
         self.js_link = config.getValue("js_link")
+        self.session = requests.Session()
+        self.headers = {
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36',
+            'Referer': 'https://app5277.com/player/videojs.html'
+        }
+
+    def getRequestsRsp(self, url):
+        res = ''
+        try:
+            response = self.session.get(url, headers=self.headers,timeout=(3,7))
+            response.raise_for_status() #若状态码不是200，抛出HTTPError异常
+            response.encoding = response.apparent_encoding  #保证页面编码正确
+            res = response.content.decode('utf-8')
+        except requests.exceptions.ConnectTimeout:
+            log.error('请求超时！')
+        except requests.exceptions.ConnectionError:
+            log.error('{}无效地址！'.format(url))
+        return res
 
     def getBaseUrl(self):
         return self.base_url
+    def getHeaders(self):
+        return self.headers
     def getKeyUrl(self):
         return self.key_url
 
     def getHtmlInfo(self, url):
-        res = requests.get(url).content
-        html = etree.HTML(res.decode('utf-8'))
+        res = self.getRequestsRsp(url)
+        html = etree.HTML(res)
         return html
 
     def getAvMenuBar(self, url):
@@ -48,30 +70,30 @@ class Spider:
     def getJsUrl(self, url):
         html = self.getHtmlInfo(url)
         jsURL = html.xpath(self.js_link)[0].get("src")
-        # print(jsURL)
+        # log.info(jsURL)
         url = self.base_url+jsURL
-        # print("jsURL:"+url)
+        # log.info("jsURL:"+url)
         return url
 
     def starts(self):
         menuList = self.getAvMenuBar(self.base_url)
-        for i in range(0, len(menuList)):
-            title = menuList[i].get("title")
-            menuUrl = menuList[i].get("href")
-            # print(title, menuUrl)
+        for menu in menuList:
+            title = menu.get("title")
+            menuUrl = menu.get("href")
+            log.info("{} {}".format(title, menuUrl))
             avList = self.getAvListInfo(menuUrl)
-            for j in range(0, len(avList)):
+            for av in avList:
                 connectlock.acquire()
-                url = self.getAVUrl(avList[j].get("href"))
-                name = avList[j].get("title")
+                url = self.getAVUrl(av.get("href"))
+                name = av.get("title")
                 jsurl = self.getJsUrl(url)
-                print("爬取:{}  {}".format(title, name))
-                t = AVThread(jsurl, title, name)
+                log.info("爬取:{}  {}".format(title, name))
+                t = AVThread(jsurl, title.strip(), name.strip())
                 t.start()
 
 
 class AVThread(Thread):
-    
+
     def __init__(self, url, title, movieName):
         Thread.__init__(self)
         self.jsurl = url
@@ -87,10 +109,10 @@ class AVThread(Thread):
             k2 = re.compile(r".*?.m3u8")
             m3u8Url = k2.findall(m3u8_main_content)[0]
             finalUrl = '{}{}'.format(Spider().getKeyUrl(), m3u8Url)
-            # print(finalUrl)
-            m3u8Assembly().download(finalUrl,self.title,self.movieName)
+            # log.info(finalUrl)
+            m3u8Assembly().download(finalUrl, self.title, self.movieName)
         finally:
-            connectlock.release() 
+            connectlock.release()
 
     def getPageId(self, url):
         pageId = re.findall(r'/play/(\d+)-*', url)[0]
@@ -98,5 +120,6 @@ class AVThread(Thread):
 
 
 if __name__ == '__main__':
+    log = Logger().get_log
     spider = Spider()
     spider.starts()
