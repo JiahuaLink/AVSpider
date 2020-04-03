@@ -18,8 +18,9 @@ class m3u8Assembly():
         self.ts_queue = queue.Queue()
         self.key_host = config.getValue("key_url")
         self.max_threads = int(config.getValue("max_threads"))
-        self.max_retries = int(config.getValue("max_retries"))video_format
-        self.video_format = int(config.getValue("video_format"))
+        self.max_retries = int(config.getValue("max_retries"))
+        self.video_format = config.getValue("video_format")
+        self.ffmpeg_path = config.getValue("ffmpeg_path")
         self.session = requests.Session()
         self.session.mount(
             'http://', HTTPAdapter(max_retries=self.max_retries))
@@ -121,7 +122,7 @@ class m3u8Assembly():
         filePath = self.get_abspath(outputName)
         os.system("cd {}".format(filePath))
         try:
-            command = "D:\\ffmpeg\\bin\\ffmpeg  -y -safe 0 -f concat -i {} -c copy {}".format(
+            command = "{}  -y -safe 0 -f concat -i {} -c copy {}".format(self.ffmpeg_path,
                 m3u8List, outputName)
             os.system(command)
 
