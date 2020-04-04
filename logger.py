@@ -18,7 +18,7 @@ class Logger:
 
         # 创建一个handler，用于将日志输出到控制台
         ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
+        ch.setLevel(logging.INFO)
 
         # 定义handler的输出格式
         formatter = logging.Formatter('%(asctime)s-%(filename)s-[line:%(lineno)d]'
