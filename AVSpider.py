@@ -22,7 +22,7 @@ class Spider:
         while not av_queue.empty():
             jsurl, menu_title, movieName = self.av_queue.get()
             m3u8Url = self.rsp.get_m3u8_url(jsurl)
-            log.info("{} 开始爬取视频:{}".format(
+            log.debug("{} 开始爬取视频:{}".format(
                 tt_name, m3u8Url))
             try:
                 # log.info(finalUrl)
@@ -42,7 +42,7 @@ class Spider:
             for av in avList[0:3]:
                 url = self.rsp.getAVUrl(av.get("href"))
                 name = av.get("title")
-                log.info("爬取:{}  {}".format(menu_title, name))
+                log.debug("爬取:{}  {}".format(menu_title, name))
                 jsurl = self.rsp.getJsUrl(url)
                 self.av_queue.put([jsurl, menu_title.strip(), name.strip()])
         return self.av_queue

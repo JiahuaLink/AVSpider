@@ -37,14 +37,12 @@ class Response():
         res = ''
         try:
             response = self.session.get(
-                url, headers=self.headers, timeout=(3, 7))
+                url, headers=self.headers, timeout=(3, 10))
             response.raise_for_status()  # 若状态码不是200，抛出HTTPError异常
             # 保证页面编码正确
             res = response.content
-        except requests.exceptions.ConnectTimeout as e:
-            log.error('请求超时！'.format(e))
-        except requests.exceptions.ConnectionError:
-            log.error('{}无效地址！'.format(url))
+        except Exception as e:
+            log.error('请求失败'.format(e))
         return res
 
     def getBaseUrl(self):

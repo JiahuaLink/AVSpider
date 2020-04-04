@@ -4,15 +4,13 @@ import queue
 import requests
 import threading
 import datetime
-from tqdm import tqdm 
-
-
+from tqdm import tqdm
 from logger import Logger
 from response import Response
 from Crypto.Cipher import AES
 from readconfig import Config
 from requests.adapters import HTTPAdapter
-
+import sys
 log = Logger(__name__).get_log
 
 
@@ -28,12 +26,10 @@ class m3u8Assembly():
     def down(self, url, title, movieName):
         # 保存的资源目录
         source_path = self.get_source_abspath()
-
         name = url.split('/')[-4]
         # m3u8文件的url
-        log.info("正在解析：{} {}".format(title, movieName))
+        log.info("正在解析：{} {} {}".format(title, movieName,url))
         # 获取m3u8文件内容
-        log.info("开始解析:{}".format(url))
         m3u8Info = Response().getRequestsRsp(url).decode('gbk')
         # 通过正值表达式获取key和ts的链接
         # key的正则匹配
@@ -41,7 +37,6 @@ class m3u8Assembly():
         # ts的正则匹配
         t = re.compile(r".*?\.ts")
         # key的url
-
         key_url = k.findall(m3u8Info)[0]
         # ts的url列表
         ts_urls = t.findall(m3u8Info)
@@ -62,23 +57,18 @@ class m3u8Assembly():
         # 初始化缓存列表
         if os.path.exists(concatfile):
             os.remove(concatfile)
+        
         ts_list = os.listdir(movie_path)
-        download_count = 0
         for ts_url in ts_urls:
             ts_name = re.search('([a-zA-Z0-9-]+.ts)', ts_url).group(1).strip()
+            
             # ts_name = ts_url.split("/")[-1]  # ts文件名
-            # 解密，new有三个参数，
-            # 第一个是秘钥（key）的二进制数据，
-            # 第二个使用下面这个就好
-            # 第三个IV在m3u8文件里URI后面会给出，如果没有，可以尝试把秘钥（key）赋值给IV
 
-            # 获取ts文件二进制数据
-            if ts_name not in ts_list:
+            if ts_name not in ts_list or os.path.getsize(os.path.join(movie_path, ts_name))==0:
                 self.ts_queue.put([self.key_host+ts_url, movie_path, key])
 
                 # log.info("断点续传, {}\{} 加入任务列表".format(movie_path, ts_name))
-            open(
-                concatfile, 'a+').write("file '{}\{}'\n".format(self.get_abspath(concatfile), ts_name))
+            open(concatfile, 'a+').write("file '{}\{}'\n".format(self.get_abspath(concatfile), ts_name))
         log.info("{} 分析完成".format(url))
         return self.ts_queue, movie_path, concatfile
 
@@ -87,42 +77,47 @@ class m3u8Assembly():
 
     def run(self, ts_queue):
         # 获取已下载列表文件，只下载不存在文件
-        download_tasks = ts_queue.qsize()
-        process_bar = tqdm(total=self._totals_tasks, initial=self._totals_tasks -
-                           download_tasks, desc='Download')
+        
         tt_name = threading.current_thread().getName()
         while not ts_queue.empty():
-            
             url, movie_path, key = self.ts_queue.get()
-            
             ts_name = re.search('([a-zA-Z0-9-]+.ts)', url).group(1).strip()
-            # log.info("线程:{} 文件:{}\{}  开始下载".format(
-            #     tt_name, movie_path, ts_name))
+            process_bar = tqdm(total=self._totals_tasks, initial=self._totals_tasks -
+                           ts_queue.qsize(), desc='Download {}\{}'.format(movie_path,ts_name), ncols=150)
+            log.debug("线程:{} 文件:{}\{}  开始下载".format(
+                tt_name, movie_path, ts_name))
             try:
                 tsInfo = Response().getRequestsRsp(url)
             except Exception as e:
-                log.info("{} 请求失败 {}".format(url, e))
+                log.error("{} 请求失败 {}".format(url, e))
 
             # 密文长度不为16的倍数，则添加b"0"直到长度为16的倍数
             while len(tsInfo) % 16 != 0:
                 tsInfo += b"0"
+                log.info("密文长度不为16的倍数".format(url))
             # log.info("正在解密：" + ts_name)
             # 写入文件
-            with open(os.path.join(movie_path, ts_name), "ab") as file:
+            ts_file = os.path.join(movie_path, ts_name)
+            with open(ts_file, "ab") as file:
                 # # decrypt方法的参数需要为16的倍数，如果不是，需要在后面补二进制"0"
                 try:
                     file.write(self.decrypt_ts(tsInfo, key))
+                    # log.info("保存成功：" + ts_name)
                     process_bar.update(10)
-                    tqdm.write("Done task %" % ts_name)
                 except Exception as e:
-                    log.info("{} ts_name 解密失败：{}".format(url,ts_name, e))
-                # log.info("保存成功：" + ts_name)
-            # log.info("线程:{} 文件:{} {} 下载成功".format(
-            #     movie_path, tt_name, ts_name))
-            
-    def decrypt_ts(self, ts, key):
+                    log.error("{} {} 解密失败{}".format(
+                        url, ts_file, e))
+                    
+            log.debug("线程:{} 文件:{} {} 下载成功".format(
+                movie_path, tt_name, ts_name))
 
+    def decrypt_ts(self, ts, key):
         # log.info(key)
+        # 解密，new有三个参数，
+        # 第一个是秘钥（key）的二进制数据，
+        # 第二个使用下面这个就好
+        # 第三个IV在m3u8文件里URI后面会给出，如果没有，可以尝试把秘钥（key）赋值给IV 
+        # 获取ts文件二进制数据
         sprytor = AES.new(key, AES.MODE_CBC, IV=key)
         return sprytor.decrypt(ts)
 
@@ -154,8 +149,10 @@ class m3u8Assembly():
             threadPools.append(t)
         for t in threadPools:
             t.start()
+            
         for t in threadPools:
             t.join()
+
         end = datetime.datetime.now().replace(microsecond=0)
         log.info('下载耗时：' + str(end - start))
 
