@@ -21,7 +21,7 @@ class Logger:
         ch.setLevel(logging.INFO)
 
         # 定义handler的输出格式
-        formatter = logging.Formatter('\n%(asctime)s-%(filename)s-[line:%(lineno)d]'
+        formatter = logging.Formatter('%(asctime)s-%(filename)s-[line:%(lineno)d]'
                                       '-%(levelname)s: %(message)s',
                                       datefmt='%a, %d %b %Y %H:%M:%S')
         fh.setFormatter(formatter)

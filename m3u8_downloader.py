@@ -129,45 +129,44 @@ class M3u8Assembly():
             tsInfo = Response().get_requests_rsp(url)
 
             # 密文长度不为16的倍数，则添加b"0"直到长度为16的倍数
+            # # decrypt方法的参数需要为16的倍数，如果不是，需要在后面补二进制"0"
             while len(tsInfo) % 16 != 0:
                 tsInfo += b"0"
-                log.debug("{} 密文长度不为16的倍数".format(url))
+                log.debug("\n{} 密文长度不为16的倍数".format(url))
             # log.info("正在解密：" + ts_name)
             # 写入文件
             ts_file = os.path.join(self._movie_path, ts_name)
 
             with open(ts_file, "ab") as file:
-                # # decrypt方法的参数需要为16的倍数，如果不是，需要在后面补二进制"0"
 
                 try:
-                    file.write(self.decrypt_ts(tsInfo, key))
                     # 已下载的数量
+                    file.write(self.decrypt_ts(tsInfo, key))
                     downloaded_count = download_task - ts_queue.qsize()
                     self.set_download_tasks(download_task - downloaded_count)
                     finish_task = self.get_finish_tasks()
+                    if finish_task == 0:
+                        showText = '寻找资源'
+                    if finish_task > 0:
+                        showText = '正在下载'
+                    if finish_task == self._totals_tasks:
+                        showText = '下载完成'
+                    print('\r'+'[任务 %s.%s %s (%d/%d)]:[%s%s] %.2f%% ' % (self._movie_name, self.video_format, showText,
+                                                                         finish_task, self._totals_tasks,
+                                                                         '>' *
+                                                                         int(60*finish_task /
+                                                                             self._totals_tasks),
+                                                                         '-' *
+                                                                         int(60*self._download_tasks /
+                                                                             self._totals_tasks),
+                                                                         float(finish_task / self._totals_tasks * 100)), end='')
 
                     # log.info("保存成功：" + ts_name)
                 except Exception as e:
                     log.debug("{}{} {} \n解密失败:{}".format(tt_name,
                                                          url, ts_file, e))
 
-                if finish_task == 0:
-                    showText = '寻找资源'
-                if finish_task > 0:
-                    showText = '正在下载'
-                if finish_task == self._totals_tasks:
-                    showText = '下载完成'
-                print('\r'+'[任务 %s.%s %s (%d/%d)]:[%s%s] %.2f%% ' % (self._movie_name, self.video_format, showText,
-                                                                     finish_task, self._totals_tasks,
-                                                                     '>' *
-                                                                     int(60*finish_task /
-                                                                         self._totals_tasks),
-                                                                     '-' *
-                                                                     int(60*self._download_tasks /
-                                                                         self._totals_tasks),
-                                                                     float(finish_task / self._totals_tasks * 100)), end='')
-
-            log.debug("{} 文件:{} {} 下载成功".format(
+            log.debug("\n{} 文件:{} {} 下载成功".format(
                 tt_name, self._movie_path, ts_name))
 
     def decrypt_ts(self, ts, key):
@@ -221,11 +220,11 @@ class M3u8Assembly():
         for t in threadPools:
             t.join()
         end = datetime.datetime.now().replace(microsecond=0)
-        log.info('{} 下载总耗时：{}'.format(movieName,
+        log.info('\n {} 下载总耗时：{}'.format(movieName,
                                          str(end - start)))
         self.merge(self._concatfile, self._movie_path, self._movie_name)
         over = datetime.datetime.now().replace(microsecond=0)
-        log.info('{} 合并完成 耗时 {}'.format(
+        log.info('\n {} 合并完成 耗时 {}'.format(
             self._movie_name, str(over - end)))
         if os.path.exists(self._output_name):
             self.del_ts_files()
@@ -258,6 +257,5 @@ if __name__ == '__main__':
     url = "https://aaaaplay.com/20200402/lpYsAmc7/1263kb/hls/index.m3u8"
     m3u8 = M3u8Assembly()
     m3u8.download(url, "国产视频", "20200402")
-    os.system('pause')
     # url = "https://aaaaplay.com/20200327/q2PbPe9N/1563kb/hls/index.m3u8"
     # m3u8.download(url, "国产视频", "20200327")
