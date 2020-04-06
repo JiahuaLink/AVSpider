@@ -88,7 +88,7 @@ class M3u8Assembly():
         ts_list = os.listdir(movie_path)
         for ts_url in ts_urls:
             # ts_name = re.search('([a-zA-Z0-9-]+.ts)', ts_url).group(1).strip()
-            
+
             ts_name = ts_url.split("/")[-1].strip()  # ts文件名
             # 只下载不存在的，或者大小为0的文件,
             if ts_name not in ts_list or os.path.getsize(os.path.join(movie_path, ts_name)) == 0:
@@ -122,7 +122,7 @@ class M3u8Assembly():
 
             # log.info('Dwonload:{} {}/{}'.format(movie_path,
             # self._totals_tasks-download_tasks, self._totals_tasks))
-            ts_name = ts_url.split("/")[-1].strip()
+            ts_name = url.split("/")[-1].strip()
             # log.info("线程:{} 文件:{}\{}  开始下载".format(
             # tt_name, movie_path, ts_name))
 
