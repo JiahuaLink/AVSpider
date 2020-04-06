@@ -1,4 +1,4 @@
-
+import os
 import re
 import queue
 import datetime
@@ -6,7 +6,7 @@ import threading
 from threading import *
 from logger import Logger
 from response import Response
-from m3u8Downloader import m3u8Assembly
+from m3u8_downloader import M3u8Assembly
 
 
 class Spider:
@@ -24,29 +24,30 @@ class Spider:
             m3u8Url = self.rsp.get_m3u8_url(jsurl)
             log.debug("{} 开始爬取视频:{}".format(
                 tt_name, m3u8Url))
+            
             try:
                 # log.info(finalUrl)
-                m3u8Assembly().download(m3u8Url, menu_title, movieName)
+                M3u8Assembly().download(m3u8Url, menu_title, movieName)
             except Exception as e:
                 log.error("爬取失败 {}".format(e))
 
     def spider_enqueue(self):
         start = datetime.datetime.now().replace(microsecond=0)
-        menuList = self.rsp.getAvMenuBar(self.rsp.getBaseUrl())
-        for menu in menuList[0:1]:
+        menuList = self.rsp.get_av_menu_bar(self.rsp.get_base_url())
+        for menu in menuList[0:2]:
             menu_title = menu.get("title")
             menuUrl = menu.get("href")
             log.info("{} {}".format(menu_title, menuUrl))
-            avList = self.rsp.getAvListInfo(menuUrl)
+            avList = self.rsp.get_av_list_info(menuUrl)
 
             for av in avList[0:3]:
-                url = self.rsp.getAVUrl(av.get("href"))
+                url = self.rsp.get_av_url(av.get("href"))
                 name = av.get("title")
                 log.debug("爬取:{}  {}".format(menu_title, name))
-                jsurl = self.rsp.getJsUrl(url)
+                jsurl = self.rsp.get_js_url(url)
                 self.av_queue.put([jsurl, menu_title.strip(), name.strip()])
         return self.av_queue
-
+    
     def start(self):
         av_queue = self.spider_enqueue()
         threadPools = []
@@ -67,3 +68,4 @@ if __name__ == '__main__':
     log = Logger(__name__).get_log
     spider = Spider()
     spider.start()
+    os.system('pause')

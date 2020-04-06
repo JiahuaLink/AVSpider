@@ -87,9 +87,9 @@ class M3u8Assembly():
 
         ts_list = os.listdir(movie_path)
         for ts_url in ts_urls:
-            ts_name = re.search('([a-zA-Z0-9-]+.ts)', ts_url).group(1).strip()
-
-            # ts_name = ts_url.split("/")[-1]  # ts文件名
+            # ts_name = re.search('([a-zA-Z0-9-]+.ts)', ts_url).group(1).strip()
+            
+            ts_name = ts_url.split("/")[-1].strip()  # ts文件名
             # 只下载不存在的，或者大小为0的文件,
             if ts_name not in ts_list or os.path.getsize(os.path.join(movie_path, ts_name)) == 0:
                 download_task += 1
@@ -122,7 +122,7 @@ class M3u8Assembly():
 
             # log.info('Dwonload:{} {}/{}'.format(movie_path,
             # self._totals_tasks-download_tasks, self._totals_tasks))
-            ts_name = re.search('([a-zA-Z0-9-]+.ts)', url).group(1).strip()
+            ts_name = ts_url.split("/")[-1].strip()
             # log.info("线程:{} 文件:{}\{}  开始下载".format(
             # tt_name, movie_path, ts_name))
 
@@ -254,8 +254,8 @@ class M3u8Assembly():
 
 
 if __name__ == '__main__':
-    url = "https://aaaaplay.com/20200402/lpYsAmc7/1263kb/hls/index.m3u8"
+    url = "https://aaaaplay.com/20200401/8n8dJqzj/1373kb/hls/index.m3u8"
     m3u8 = M3u8Assembly()
-    m3u8.download(url, "国产视频", "20200402")
+    m3u8.download(url, "日本无码", "20200401")
     # url = "https://aaaaplay.com/20200327/q2PbPe9N/1563kb/hls/index.m3u8"
     # m3u8.download(url, "国产视频", "20200327")
